@@ -1,0 +1,7 @@
+<p>file-upload works!</p>
+
+<div (click)="uploadFile.click()">
+   <button mat-raised-button color="primary">Choose File</button>
+   <input #uploadFile (change)="upload($event)" type='file' style="display:none"/> 
+</div>
+{{title}}

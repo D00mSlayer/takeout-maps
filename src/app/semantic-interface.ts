@@ -15,8 +15,8 @@ interface EndLocation {
 }
 
 interface Duration {
-    startTimestamp?: Date;
-    endTimestamp?: Date;
+    startTimestamp: Date;
+    endTimestamp: Date;
 }
 
 interface Activity {
@@ -85,7 +85,7 @@ interface OtherCandidateLocation {
 
 interface PlaceVisit {
     location?: PlaceVisitLocation;
-    duration?: Duration;
+    duration: Duration;
     placeConfidence?: string;
     centerLatE7: number;
     centerLngE7: number;

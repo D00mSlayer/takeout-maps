@@ -15,25 +15,15 @@ import { SemanticInterfaceObject } from '.././semantic-interface';
 export class InteractiveMapComponent implements OnInit {
 
   map;
-
-  // type MapData = {
-  //   [key: string]: any;
-  // }
-
-  // interface IMapData {
-  //   timelineObjects?: any;
-  // }
-
-  // mapData: { timelineObjects?: string; } = {};
-  // mapData: { timelineObjects?: string; } = {};
   mapData: SemanticInterfaceObject = {};
+  start?: Date;
+  end?: Date;
 
   markerIcon = {
     icon: L.icon({
       iconSize: [25, 41],
       iconAnchor: [10, 41],
       popupAnchor: [2, -40],
-      // specify the path here
       iconUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-icon.png",
       shadowUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-shadow.png"
     })
@@ -44,7 +34,7 @@ export class InteractiveMapComponent implements OnInit {
       L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '...' })
     ],
     zoom: 12,
-    center: L.latLng(22.971599, 77.594566)
+    center: L.latLng(0, 0)
   };
 
   layersControl = {
@@ -77,7 +67,7 @@ export class InteractiveMapComponent implements OnInit {
     this.layers = [];
     // debugger
     // console.log(this.mapData)
-    console.log(event.value)
+    // console.log(event.value)
     // if (_.isEmpty(this.mapData)) return;
     // if (!_.has(this.mapData, 'timelineObjects')) return;
     var timelineObjects = this.mapData.timelineObjects || [];
@@ -90,10 +80,16 @@ export class InteractiveMapComponent implements OnInit {
     var markers : any[] = [];
     var lnpA: any[] = [];
     // debugger
+    let _this = this;
     _.each(placeVisits, function (each) {
       // debugger
       if (!each.placeVisit.centerLatE7) return;
       if (!each.placeVisit.centerLngE7) return;
+      _this.start = new Date(new Date(each.placeVisit.duration.startTimestamp).toDateString());
+      _this.end = new Date(new Date(each.placeVisit.duration.endTimestamp).toDateString());
+      // console.log(_this.isDateWithinRange(start, end, new Date(event.value as Date).toDateString()))
+      // console.log(_this.start, _this.end, event.value)
+      if (!_this.isDateWithinRange(_this.start, _this.end, event.value as Date)) return;
       // console.log(each.placeVisit.centerLatE7)
       var marker = L.marker(
         [each.placeVisit.centerLatE7/10000000, each.placeVisit.centerLngE7/10000000],
@@ -111,6 +107,9 @@ export class InteractiveMapComponent implements OnInit {
       lnpA.push([each.placeVisit.centerLatE7/10000000, each.placeVisit.centerLngE7/10000000]);
       markers.push(marker);
     });
+    // console.log(markers)
+    if (_.isEmpty(markers)) return;
+    if (_.isEmpty(lnpA)) return;
     var myBounds = new L.LatLngBounds(lnpA);
     this.sample();
     // debugger
@@ -132,6 +131,10 @@ export class InteractiveMapComponent implements OnInit {
       this.map.panTo(L.latLng(pos.lat, pos.lng))
        console.log(`Positon: ${pos.lng} ${pos.lat}`);
     });
+  }
+
+  isDateWithinRange(from: Date, to: Date, check: Date) {
+    return check >= from && check <= to;
   }
 
   // initMarkers() {

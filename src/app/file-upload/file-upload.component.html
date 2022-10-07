@@ -1,7 +1,16 @@
-<p>file-upload works!</p>
+<p>file-upload component!</p>
 
-<div (click)="uploadFile.click()">
-   <button mat-raised-button color="primary">Choose File</button>
-   <input #uploadFile (change)="upload($event)" type='file' style="display:none"/> 
+<div (click)="selectMapJSONFile.click()">
+   <button mat-raised-button color="primary">Google Maps JSON</button>
+   <input #selectMapJSONFile (change)="selectGoogleMapJSON($event)" type='file' style="display:none"/> 
 </div>
-{{title}}
+<br>
+<div (click)="selectPayHTML.click()">
+   <button mat-raised-button color="primary">Google Pay HTML</button>
+   <input #selectPayHTML (change)="selectGooglePayHTML($event)" type='file' style="display:none"/> 
+</div>
+
+
+Google Map JSON Upload Status: <mat-icon aria-hidden="false" aria-label="Example home icon">{{mapUploadStatus}}</mat-icon>
+<br>
+Google Pay HTML Upload Status: <mat-icon aria-hidden="false" aria-label="Example home icon">{{payUploadStatus}}</mat-icon>

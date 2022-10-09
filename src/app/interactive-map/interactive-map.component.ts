@@ -5,6 +5,8 @@ import * as L from "leaflet";
 import * as _ from 'underscore';
 import { MatDatepickerInputEvent } from '@angular/material/datepicker';
 import { SemanticInterfaceObject } from '.././semantic-interface';
+// import 'leaflet-arrowheads';
+// import * as GeometryUtil from "leaflet-geometryutil";
 
 @Component({
   selector: 'app-interactive-map',
@@ -69,6 +71,8 @@ export class InteractiveMapComponent implements OnInit {
     // L.marker([ 46.879966, -121.726909 ])
   ];
 
+  bounds: any[] = [];
+
   constructor(
     private localStorageService: LocalStorageService,
     private locationService: LocationServiceService
@@ -79,15 +83,130 @@ export class InteractiveMapComponent implements OnInit {
     this.payData = JSON.parse(this.localStorageService.getItemFromStorage('payJSON') || '{}');
   }
 
-  valueChanged(event: MatDatepickerInputEvent<Date>) {
-    this.updateTimelineData(event);
-    this.updatePayData(event);
+  isActivitySegment = (obj) => {
+    return _.has(obj, 'activitySegment');
   }
+
+  isPlaceVisit = (obj) => {
+    return _.has(obj, 'placeVisit');
+  }
+
+  convertToTZ = (date, tzString) => {
+    return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));
+  }
+
+  convertToDate = (date: Date) => {
+    return new Date(date.toDateString());
+  }
+
+  // convertAllDatesToTZ = () => {
+  //   let timelineObjects = this.mapData.timelineObjects || [];
+  //   _.each(timelineObjects, (each) => {
+
+  //   })
+  // }
+
+  valueChanged = (event: MatDatepickerInputEvent<Date>) => {
+    this.layers = [];
+    this.bounds = [];
+    let timelineObjects = this.mapData.timelineObjects || [];
+    _.each(timelineObjects, (each) => {
+      if (this.isActivitySegment(each)) this.processActivitySegment(event, each);
+      if (this.isPlaceVisit(each)) this.processPlaceVisit(event, each);
+    });
+    if (_.isEmpty(this.bounds)) return;
+    let tempBounds = new L.LatLngBounds(this.bounds);
+    this.map.fitBounds(tempBounds);
+  }
+
+  processActivitySegment = (event: MatDatepickerInputEvent<Date>, activitySegment) => {
+    // debugger
+    let isDateWithinRange = this.isDateWithinRange(
+      this.convertToDate(
+        this.convertToTZ(activitySegment.activitySegment.duration.startTimestamp, 'Asia/Kolkata')
+      ),
+      this.convertToDate(
+        this.convertToTZ(activitySegment.activitySegment.duration.endTimestamp, 'Asia/Kolkata')
+      ),
+      event.value as Date
+    );
+    if (!isDateWithinRange) return;
+
+    // let polyLine = [
+    //   [activitySegment.activitySegment.startLocation.latitudeE7/10000000, activitySegment.activitySegment.startLocation.longitudeE7/10000000],
+    //   [activitySegment.activitySegment.endLocation.latitudeE7/10000000, activitySegment.activitySegment.endLocation.longitudeE7/10000000]
+    // ];
+    this.layers.push(L.polyline(
+      [
+        [activitySegment.activitySegment.startLocation.latitudeE7/10000000, activitySegment.activitySegment.startLocation.longitudeE7/10000000],
+        [activitySegment.activitySegment.endLocation.latitudeE7/10000000, activitySegment.activitySegment.endLocation.longitudeE7/10000000]
+      ]
+    ));
+    this.bounds.push([activitySegment.activitySegment.startLocation.latitudeE7/10000000, activitySegment.activitySegment.startLocation.longitudeE7/10000000]);
+    this.bounds.push([activitySegment.activitySegment.endLocation.latitudeE7/10000000, activitySegment.activitySegment.endLocation.longitudeE7/10000000]);
+
+    // this.layers.push(L.polyline(
+    //   [
+    //     [45.51, -122.68],
+    //     [37.77, -122.43],
+    //     [34.04, -118.2]
+    //   ]
+    // ))
+
+
+  }
+
+  processPlaceVisit = (event: MatDatepickerInputEvent<Date>, placeVisit) => {
+    let isPlaceVisitWithinRange = this.isDateWithinRange(
+      this.convertToDate(
+        this.convertToTZ(placeVisit.placeVisit.duration.startTimestamp, 'Asia/Kolkata')
+      ),
+      this.convertToDate(
+        this.convertToTZ(placeVisit.placeVisit.duration.endTimestamp, 'Asia/Kolkata')
+      ),
+      event.value as Date
+    );
+    if (!isPlaceVisitWithinRange) return;
+
+    // if (!placeVisit.placeVisit.centerLatE7) return;
+    // if (!placeVisit.placeVisit.centerLngE7) return;
+    let marker = L.marker(
+      [placeVisit.placeVisit.location.latitudeE7/10000000, placeVisit.placeVisit.location.longitudeE7/10000000],
+      {
+        icon: L.icon({
+          iconSize: [32, 32],
+          // iconAnchor: [10, 41],
+          // popupAnchor: [2, -40],
+          // specify the path here
+          // iconUrl: "assets/icons/sent-money.png",
+          iconUrl: "assets/icons/map-visit.png",
+          // iconUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-icon.png",
+          // shadowUrl: "assets/icons/marker-shadow.png"
+        })
+      }
+    );
+    this.layers.push(marker);
+    this.bounds.push([placeVisit.placeVisit.location.latitudeE7/10000000, placeVisit.placeVisit.location.longitudeE7/10000000]);
+    this.bounds.push([placeVisit.placeVisit.location.latitudeE7/10000000, placeVisit.placeVisit.location.longitudeE7/10000000]);
+  }
+
+  // valueChanged(event: MatDatepickerInputEvent<Date>) {
+
+  //   let timelineObjects = this.mapData.timelineObjects || [];
+  //   _.each(timelineObjects, function(each) {
+  //     console.log(this)
+  //     // if (this.isActivitySegment(each)) this.processActivitySegment(each);
+  //   }, this);
+
+  //   this.updateTimelineData(event);
+  //   this.updatePayData(event);
+  // }
+
 
   updatePayData(event: MatDatepickerInputEvent<Date>) {
     // debugger
     _.each(this.payData, function (each) {
-
+      // this.layers.push(L.polyline([[45.51, -122.68], [37.77, -122.43], [34.04, -118.2]]))
     });
   }
 
@@ -112,14 +231,14 @@ export class InteractiveMapComponent implements OnInit {
         [each.placeVisit.centerLatE7/10000000, each.placeVisit.centerLngE7/10000000],
         {
           icon: L.icon({
-            iconSize: [25, 41],
-            iconAnchor: [10, 41],
-            popupAnchor: [2, -40],
+            iconSize: [32, 32],
+            // iconAnchor: [10, 41],
+            // popupAnchor: [2, -40],
             // specify the path here
             // iconUrl: "assets/icons/sent-money.png",
-            iconUrl: "assets/icons/marker-icon.png",
+            iconUrl: "assets/icons/map-visita.png",
             // iconUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-icon.png",
-            shadowUrl: "assets/icons/marker-shadow.png"
+            // shadowUrl: "assets/icons/marker-shadow.png"
           })
         }
       );
@@ -130,7 +249,6 @@ export class InteractiveMapComponent implements OnInit {
     if (_.isEmpty(lnpA)) return;
     var myBounds = new L.LatLngBounds(lnpA);
     this.layers = markers;
-    this.layers.push(L.polyline([[45.51, -122.68], [37.77, -122.43], [34.04, -118.2]]))
     this.map.fitBounds(myBounds);
   }
 

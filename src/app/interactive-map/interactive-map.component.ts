@@ -16,6 +16,7 @@ export class InteractiveMapComponent implements OnInit {
 
   map;
   mapData: SemanticInterfaceObject = {};
+  payData: any = {};
   start?: Date;
   end?: Date;
 
@@ -24,8 +25,22 @@ export class InteractiveMapComponent implements OnInit {
       iconSize: [25, 41],
       iconAnchor: [10, 41],
       popupAnchor: [2, -40],
-      iconUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-icon.png",
-      shadowUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-shadow.png"
+      iconUrl: "assets/icons/marker-icon.png",
+      // iconUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-icon.png",
+      shadowUrl: "assets/icons/marker-shadow.png"
+      // shadowUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-shadow.png"
+    })
+  };
+
+  moneySentIcon = {
+    icon: L.icon({
+      iconSize: [25, 41],
+      iconAnchor: [10, 41],
+      popupAnchor: [2, -40],
+      iconUrl: "assets/icons/sent-money.png",
+      // iconUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-icon.png",
+      // shadowUrl: "assets/icons/marker-shadow.png"
+      // shadowUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-shadow.png"
     })
   };
 
@@ -60,37 +75,39 @@ export class InteractiveMapComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.mapData = JSON.parse(this.localStorageService.getItemFromStorage() || '{}');
+    this.mapData = JSON.parse(this.localStorageService.getItemFromStorage('mapJSON') || '{}');
+    this.payData = JSON.parse(this.localStorageService.getItemFromStorage('payJSON') || '{}');
   }
 
   valueChanged(event: MatDatepickerInputEvent<Date>) {
-    this.layers = [];
+    this.updateTimelineData(event);
+    this.updatePayData(event);
+  }
+
+  updatePayData(event: MatDatepickerInputEvent<Date>) {
     // debugger
-    // console.log(this.mapData)
-    // console.log(event.value)
-    // if (_.isEmpty(this.mapData)) return;
-    // if (!_.has(this.mapData, 'timelineObjects')) return;
+    _.each(this.payData, function (each) {
+
+    });
+  }
+
+  updateTimelineData(event: MatDatepickerInputEvent<Date>) {
+    this.layers = [];
     var timelineObjects = this.mapData.timelineObjects || [];
-    // console.log(timelineObjects)
+    // debugger
     var placeVisits = _.filter(timelineObjects, function (each) {
       return _.has(each, 'placeVisit');
     });
-    // console.log(placeVisits)
     if (!placeVisits) return;
     var markers : any[] = [];
     var lnpA: any[] = [];
-    // debugger
     let _this = this;
     _.each(placeVisits, function (each) {
-      // debugger
       if (!each.placeVisit.centerLatE7) return;
       if (!each.placeVisit.centerLngE7) return;
       _this.start = new Date(new Date(each.placeVisit.duration.startTimestamp).toDateString());
       _this.end = new Date(new Date(each.placeVisit.duration.endTimestamp).toDateString());
-      // console.log(_this.isDateWithinRange(start, end, new Date(event.value as Date).toDateString()))
-      // console.log(_this.start, _this.end, event.value)
       if (!_this.isDateWithinRange(_this.start, _this.end, event.value as Date)) return;
-      // console.log(each.placeVisit.centerLatE7)
       var marker = L.marker(
         [each.placeVisit.centerLatE7/10000000, each.placeVisit.centerLngE7/10000000],
         {
@@ -99,52 +116,35 @@ export class InteractiveMapComponent implements OnInit {
             iconAnchor: [10, 41],
             popupAnchor: [2, -40],
             // specify the path here
-            iconUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-icon.png",
-            shadowUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-shadow.png"
+            // iconUrl: "assets/icons/sent-money.png",
+            iconUrl: "assets/icons/marker-icon.png",
+            // iconUrl: "https://unpkg.com/leaflet@1.4.0/dist/images/marker-icon.png",
+            shadowUrl: "assets/icons/marker-shadow.png"
           })
         }
       );
       lnpA.push([each.placeVisit.centerLatE7/10000000, each.placeVisit.centerLngE7/10000000]);
       markers.push(marker);
     });
-    // console.log(markers)
     if (_.isEmpty(markers)) return;
     if (_.isEmpty(lnpA)) return;
     var myBounds = new L.LatLngBounds(lnpA);
-    this.sample();
-    // debugger
     this.layers = markers;
+    this.layers.push(L.polyline([[45.51, -122.68], [37.77, -122.43], [34.04, -118.2]]))
     this.map.fitBounds(myBounds);
-  }
-
-  sample() {
-    console.log('samokel')
   }
 
   onMapReady(map: L.Map) {
     this.map = map;
-    // this.initMarkers();
-    console.log('onmread')
     this.locationService.getPosition().then(pos=>
     {
-      // this.options['center'] = L.latLng(pos.lat, pos.lng)
       this.map.panTo(L.latLng(pos.lat, pos.lng))
-       console.log(`Positon: ${pos.lng} ${pos.lat}`);
+       console.log(`GOT ----- Positon: ${pos.lng} ${pos.lat}`);
     });
   }
 
   isDateWithinRange(from: Date, to: Date, check: Date) {
     return check >= from && check <= to;
   }
-
-  // initMarkers() {
-  //   const popupInfo = `<b style="color: red; background-color: white">${
-  //     this.popupText
-  //   }</b>`;
-
-  //   L.marker([this.homeCoords.lat, this.homeCoords.lon], this.markerIcon)
-  //     .addTo(this.map)
-  //     .bindPopup(popupInfo);
-  // }
 
 }

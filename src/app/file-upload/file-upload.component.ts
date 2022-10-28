@@ -63,19 +63,19 @@ export class FileUploadComponent implements OnInit {
     reader.onload = () => {
       let parser = new DOMParser();
       let node = parser.parseFromString(reader.result as string, 'text/html');
-      let _this = this;
-      _.each(node?.body?.firstChild?.childNodes || [], function(each){
+      // let _this = this;
+      _.each(node?.body?.firstChild?.childNodes || [], (each) => {
         let txt = each?.firstChild?.childNodes[1].childNodes[0].textContent || '';
         let direction = txt.split("")[0];
         let amount = (txt.match(/₹[0-9]*\.[0-9][0-9]/g) || ['₹0.00'])[0];
         let dateUTCStr = (each?.firstChild?.childNodes[1].childNodes[2].textContent || '').replace(',', '').replace('IST', 'GMT+0530');
         let status = ((each?.firstChild?.childNodes[3].textContent || '').match(/Completed|Failed|Pending|Cancelled/) || ['Unknown'])[0];
 
-        _this.gPayData.push({
+        this.gPayData.push({
           amount: amount,
           timestamp: dateUTCStr,
           status: status,
-          direction: _this.directionMap[direction],
+          direction: this.directionMap[direction],
           location: {}
         });
       });
